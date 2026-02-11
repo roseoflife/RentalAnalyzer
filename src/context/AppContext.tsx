@@ -12,6 +12,7 @@ function loadState(): AppState {
       return {
         ...initialState,
         ...parsed,
+        subscription: parsed.subscription ?? initialState.subscription,
         config: {
           ...initialState.config,
           ...parsed.config,

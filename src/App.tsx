@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
+import { useUser } from '@clerk/clerk-react';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
@@ -22,6 +23,7 @@ import { useRecommendation } from './hooks/useRecommendation';
 import { calculateOverallMetrics } from './utils/metrics';
 import { generateProjectedData } from './utils/projections';
 import type { AnnualSummary } from './types';
+import type { SubscriptionTier } from './context/AppReducer';
 import { formatCurrency } from './utils/formatters';
 
 const CUTOFF_YEAR = new Date().getFullYear();
@@ -246,12 +248,27 @@ function DataTab() {
   );
 }
 
+function SubscriptionSync() {
+  const { user } = useUser();
+  const { dispatch } = useAppContext();
+
+  useEffect(() => {
+    if (user) {
+      const tier = (user.publicMetadata?.subscription as SubscriptionTier) || 'free';
+      dispatch({ type: 'SET_SUBSCRIPTION', payload: tier });
+    }
+  }, [user, dispatch]);
+
+  return null;
+}
+
 function AppContent() {
   const { state } = useAppContext();
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       <Header />
+      <SubscriptionSync />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <PageContainer>

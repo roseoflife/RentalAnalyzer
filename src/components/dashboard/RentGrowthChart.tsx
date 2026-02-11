@@ -23,8 +23,6 @@ export function RentGrowthChart({ config, income, projectionYears = 25 }: RentGr
   const data = useMemo(() => {
     if (income.length === 0) return [];
 
-    const currentYear = new Date().getFullYear();
-
     // Get the last year's annual rental income as base
     const years = [...new Set(income.map((r) => r.year))].sort((a, b) => a - b);
     const lastDataYear = years[years.length - 1];

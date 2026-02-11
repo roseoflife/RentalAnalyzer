@@ -19,6 +19,8 @@ export interface LoadedFile {
   type: string;
 }
 
+export type SubscriptionTier = 'free' | 'pro';
+
 export interface AppState {
   config: AppConfig;
   incomeData: IncomeRecord[];
@@ -26,6 +28,7 @@ export interface AppState {
   activeTab: TabId;
   dataLoaded: boolean;
   loadedFiles: LoadedFile[];
+  subscription: SubscriptionTier;
 }
 
 export type AppAction =
@@ -41,6 +44,7 @@ export type AppAction =
   | { type: 'SET_EXTRA_MONTHLY_PAYMENT'; payload: number }
   | { type: 'SET_MANUAL_FINANCIALS'; payload: Partial<ManualFinancials> }
   | { type: 'SET_ACTIVE_TAB'; payload: TabId }
+  | { type: 'SET_SUBSCRIPTION'; payload: SubscriptionTier }
   | { type: 'CLEAR_DATA' };
 
 export const initialState: AppState = {
@@ -50,6 +54,7 @@ export const initialState: AppState = {
   activeTab: 'setup',
   dataLoaded: false,
   loadedFiles: [],
+  subscription: 'free',
 };
 
 function generateManualRecords(
@@ -285,6 +290,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         activeTab: hasData ? 'past' : state.activeTab,
       };
     }
+    case 'SET_SUBSCRIPTION':
+      return { ...state, subscription: action.payload };
     case 'SET_ACTIVE_TAB':
       return { ...state, activeTab: action.payload };
     case 'CLEAR_DATA':

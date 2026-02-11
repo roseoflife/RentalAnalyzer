@@ -14,7 +14,7 @@ export function calculateAnnualSummaries(
   const sortedYears = Array.from(years).sort((a, b) => a - b);
   const baseYear = sortedYears[0];
 
-  return sortedYears.map((year, yearIndex) => {
+  return sortedYears.map((year, _yearIndex) => {
     const yearIncome = income.filter((r) => r.year === year);
     const yearExpenses = expenses.filter((r) => r.year === year);
 

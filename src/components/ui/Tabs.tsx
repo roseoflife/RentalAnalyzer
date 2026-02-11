@@ -4,6 +4,7 @@ interface Tab {
   id: string;
   label: string;
   icon?: React.ReactNode;
+  disabled?: boolean;
 }
 
 interface TabsProps {
@@ -23,7 +24,9 @@ export function Tabs({ tabs, activeTab, onChange }: TabsProps) {
             'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors',
             activeTab === tab.id
               ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              : tab.disabled
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-600 hover:text-gray-900'
           )}
         >
           {tab.icon}

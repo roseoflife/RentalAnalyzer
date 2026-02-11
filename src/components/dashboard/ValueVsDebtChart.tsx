@@ -11,7 +11,6 @@ import {
 } from 'recharts';
 import { useMemo } from 'react';
 import type { AppConfig } from '../../types';
-import type { MortgagePeriod } from '../../types/property';
 import { Card } from '../ui/Card';
 import { formatCurrency } from '../../utils/formatters';
 import { getMultiMortgageBalanceAtMonth } from '../../utils/mortgage';
