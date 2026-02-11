@@ -11,6 +11,8 @@ import { EquityBuildupChart } from './components/dashboard/EquityBuildupChart';
 import { ExpenseBreakdownChart } from './components/dashboard/ExpenseBreakdownChart';
 import { RecommendationCard } from './components/dashboard/RecommendationCard';
 import { ValueVsDebtChart } from './components/dashboard/ValueVsDebtChart';
+import { SellInvestChart } from './components/dashboard/SellInvestChart';
+import { RentGrowthChart } from './components/dashboard/RentGrowthChart';
 import { AnnualSummaryTable } from './components/tables/AnnualSummaryTable';
 import { MortgageScheduleTable } from './components/tables/MortgageScheduleTable';
 import { RawDataTable } from './components/tables/RawDataTable';
@@ -18,6 +20,7 @@ import { useMetricsCalculator } from './hooks/useMetricsCalculator';
 import { useMortgageAmortization } from './hooks/useMortgageAmortization';
 import { useRecommendation } from './hooks/useRecommendation';
 import { calculateOverallMetrics } from './utils/metrics';
+import { generateProjectedData } from './utils/projections';
 import type { AnnualSummary } from './types';
 import { formatCurrency } from './utils/formatters';
 
@@ -153,15 +156,32 @@ function PastTab() {
 
 function FutureTab() {
   const { state } = useAppContext();
-  const { annualSummaries } = useMetricsCalculator(
-    state.incomeData,
-    state.expenseData,
+
+  // Generate projected data for 25 years beyond existing data
+  const { projectedIncome, projectedExpenses } = useMemo(
+    () => generateProjectedData(state.incomeData, state.expenseData, state.config, 25),
+    [state.incomeData, state.expenseData, state.config]
+  );
+
+  // Merge existing + projected data
+  const allIncome = useMemo(
+    () => [...state.incomeData, ...projectedIncome],
+    [state.incomeData, projectedIncome]
+  );
+  const allExpenses = useMemo(
+    () => [...state.expenseData, ...projectedExpenses],
+    [state.expenseData, projectedExpenses]
+  );
+
+  const { annualSummaries: allSummaries } = useMetricsCalculator(
+    allIncome,
+    allExpenses,
     state.config
   );
 
   const futureSummaries = useMemo(
-    () => annualSummaries.filter((s) => s.year >= CUTOFF_YEAR),
-    [annualSummaries]
+    () => allSummaries.filter((s) => s.year >= CUTOFF_YEAR),
+    [allSummaries]
   );
 
   const futureMetrics = useMemo(
@@ -169,7 +189,7 @@ function FutureTab() {
     [futureSummaries, state.config]
   );
 
-  const recommendation = useRecommendation(annualSummaries, state.config);
+  const recommendation = useRecommendation(allSummaries, state.config);
 
   if (!state.dataLoaded) return <NoDataPlaceholder />;
 
@@ -194,10 +214,12 @@ function FutureTab() {
       </div>
       <SummaryCards metrics={futureMetrics} recommendation={recommendation} />
       <ValueVsDebtChart config={state.config} projectionYears={25} />
+      <SellInvestChart config={state.config} summaries={futureSummaries} projectionYears={25} />
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <CashFlowChart summaries={futureSummaries} />
-        <ROIComparisonChart summaries={annualSummaries} config={state.config} />
-        <EquityBuildupChart summaries={annualSummaries} config={state.config} />
+        <RentGrowthChart config={state.config} income={allIncome} projectionYears={25} />
+        <ROIComparisonChart summaries={allSummaries} config={state.config} />
+        <EquityBuildupChart summaries={allSummaries} config={state.config} />
       </div>
       <RecommendationCard recommendation={recommendation} />
     </div>
@@ -211,7 +233,7 @@ function DataTab() {
     state.expenseData,
     state.config
   );
-  const schedule = useMortgageAmortization(state.config.mortgages);
+  const schedule = useMortgageAmortization(state.config.mortgages, state.config.extraMonthlyPayment);
 
   if (!state.dataLoaded) return <NoDataPlaceholder />;
 

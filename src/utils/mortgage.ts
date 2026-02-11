@@ -130,7 +130,8 @@ export function getMortgageForYear(
 function simulateMultiMortgageBalance(
   mortgages: MortgagePeriod[],
   toYear: number,
-  toMonth: number // 1-12
+  toMonth: number, // 1-12
+  extraMonthlyPayment: number = 0
 ): number {
   const sorted = [...mortgages].sort((a, b) => a.startYear - b.startYear);
   if (sorted.length === 0) return 0;
@@ -163,7 +164,8 @@ function simulateMultiMortgageBalance(
 
     if (balance <= 0) break;
     const interest = balance * monthlyRate;
-    const principal = Math.min(payment - interest, balance);
+    const totalPayment = payment + extraMonthlyPayment;
+    const principal = Math.min(totalPayment - interest, balance);
     balance = Math.max(0, balance - principal);
   }
 
@@ -174,15 +176,17 @@ function simulateMultiMortgageBalance(
 export function getMultiMortgageBalanceAtMonth(
   mortgages: MortgagePeriod[],
   year: number,
-  month: number
+  month: number,
+  extraMonthlyPayment: number = 0
 ): number {
-  return simulateMultiMortgageBalance(mortgages, year, month);
+  return simulateMultiMortgageBalance(mortgages, year, month, extraMonthlyPayment);
 }
 
 /** Get principal and interest paid in a given year across mortgage periods */
 export function getMultiMortgagePrincipalAndInterest(
   mortgages: MortgagePeriod[],
-  year: number
+  year: number,
+  extraMonthlyPayment: number = 0
 ): { principal: number; interest: number } {
   const sorted = [...mortgages].sort((a, b) => a.startYear - b.startYear);
   if (sorted.length === 0) return { principal: 0, interest: 0 };
@@ -219,7 +223,8 @@ export function getMultiMortgagePrincipalAndInterest(
 
     if (balance <= 0) break;
     const interest = balance * monthlyRate;
-    const principal = Math.min(payment - interest, balance);
+    const totalPayment = payment + extraMonthlyPayment;
+    const principal = Math.min(totalPayment - interest, balance);
     balance = Math.max(0, balance - principal);
 
     if (absMonth >= yearStartAbsMonth) {
@@ -237,7 +242,8 @@ export interface MultiPeriodPayment extends MortgagePayment {
 
 /** Generate a combined amortization schedule across all mortgage periods */
 export function generateMultiPeriodSchedule(
-  mortgages: MortgagePeriod[]
+  mortgages: MortgagePeriod[],
+  extraMonthlyPayment: number = 0
 ): MultiPeriodPayment[] {
   const sorted = [...mortgages].sort((a, b) => a.startYear - b.startYear);
   if (sorted.length === 0) return [];
@@ -280,7 +286,8 @@ export function generateMultiPeriodSchedule(
 
     if (balance <= 0) break;
     const interest = balance * monthlyRate;
-    const principal = Math.min(payment - interest, balance);
+    const totalPayment = payment + extraMonthlyPayment;
+    const principal = Math.min(totalPayment - interest, balance);
     balance = Math.max(0, balance - principal);
     totalPrincipal += principal;
     totalInterest += interest;
@@ -288,7 +295,7 @@ export function generateMultiPeriodSchedule(
     schedule.push({
       month: absMonth,
       year: calYear,
-      payment,
+      payment: totalPayment,
       principal,
       interest,
       balance,

@@ -42,7 +42,7 @@ export function ValueVsDebtChart({ config, projectionYears = 25 }: ValueVsDebtCh
       const yearsSincePurchase = year - startYear + 1;
       const propertyValue = config.property.purchasePrice *
         Math.pow(1 + config.assumptions.appreciationRate / 100, yearsSincePurchase);
-      const loanBalance = getMultiMortgageBalanceAtMonth(mortgages, year, 12);
+      const loanBalance = getMultiMortgageBalanceAtMonth(mortgages, year, 12, config.extraMonthlyPayment ?? 0);
       const equity = propertyValue - loanBalance;
 
       points.push({

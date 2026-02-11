@@ -129,6 +129,15 @@ export function MortgageConfigForm() {
           <Plus size={14} />
           Add Refinance
         </button>
+        <NumberInput
+          label="Extra Monthly Payment"
+          value={state.config.extraMonthlyPayment}
+          onChange={(v) => dispatch({ type: 'SET_EXTRA_MONTHLY_PAYMENT', payload: v })}
+          prefix="$"
+          min={0}
+          max={10000}
+          step={50}
+        />
       </div>
     </div>
   );

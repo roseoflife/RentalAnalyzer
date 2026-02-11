@@ -4,7 +4,11 @@ import type { MultiPeriodPayment } from '../utils/mortgage';
 import { generateMultiPeriodSchedule } from '../utils/mortgage';
 
 export function useMortgageAmortization(
-  mortgages: MortgagePeriod[]
+  mortgages: MortgagePeriod[],
+  extraMonthlyPayment: number = 0
 ): MultiPeriodPayment[] {
-  return useMemo(() => generateMultiPeriodSchedule(mortgages), [mortgages]);
+  return useMemo(
+    () => generateMultiPeriodSchedule(mortgages, extraMonthlyPayment),
+    [mortgages, extraMonthlyPayment]
+  );
 }

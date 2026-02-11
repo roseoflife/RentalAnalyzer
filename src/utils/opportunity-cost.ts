@@ -16,15 +16,18 @@ export function calculateWealthComparison(
 
   const spRate = config.assumptions.spReturn / 100;
   let cumulativeCashFlow = 0;
+  let prevSpWealth = totalCashInvested;
 
-  return summaries.map((summary, index) => {
-    cumulativeCashFlow += summary.netCashFlow + summary.taxBenefit;
+  return summaries.map((summary) => {
+    const annualCashFlow = summary.netCashFlow + summary.taxBenefit;
+    cumulativeCashFlow += annualCashFlow;
 
     // Property total wealth = current equity + cumulative cash flows
     const propertyWealth = summary.equity + cumulativeCashFlow;
 
-    // S&P wealth = initial investment compounded + cash flows reinvested
-    const spWealth = totalCashInvested * Math.pow(1 + spRate, index + 1);
+    // S&P wealth = compound prior balance + reinvest this year's cash flow
+    const spWealth = prevSpWealth * (1 + spRate) + annualCashFlow;
+    prevSpWealth = spWealth;
 
     return {
       year: summary.year,

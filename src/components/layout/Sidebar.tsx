@@ -1,6 +1,7 @@
 import { PropertyConfigForm } from '../config/PropertyConfigForm';
 import { MortgageConfigForm } from '../config/MortgageConfigForm';
 import { AssumptionsForm } from '../config/AssumptionsForm';
+import { IncomeExpenseForm } from '../config/IncomeExpenseForm';
 
 export function Sidebar() {
   return (
@@ -8,6 +9,7 @@ export function Sidebar() {
       <div className="p-4 space-y-4">
         <PropertyConfigForm />
         <MortgageConfigForm />
+        <IncomeExpenseForm />
         <AssumptionsForm />
       </div>
     </aside>

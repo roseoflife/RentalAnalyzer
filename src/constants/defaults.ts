@@ -1,4 +1,4 @@
-import type { AppConfig, MortgagePeriod } from '../types';
+import type { AppConfig, ManualFinancials, MortgagePeriod } from '../types';
 
 export const DEFAULT_MORTGAGES: MortgagePeriod[] = [
   {
@@ -10,6 +10,23 @@ export const DEFAULT_MORTGAGES: MortgagePeriod[] = [
     startYear: 2015,
   },
 ];
+
+export const DEFAULT_MANUAL_FINANCIALS: ManualFinancials = {
+  monthlyRent: 0,
+  otherMonthlyIncome: 0,
+  vacancyRate: 5,
+  annualExpenses: {
+    property_tax: 0,
+    insurance: 0,
+    maintenance: 0,
+    repairs: 0,
+    management: 0,
+    utilities: 0,
+    hoa: 0,
+    capex: 0,
+    other: 0,
+  },
+};
 
 export const DEFAULT_CONFIG: AppConfig = {
   property: {
@@ -35,7 +52,10 @@ export const DEFAULT_CONFIG: AppConfig = {
     sellingCosts: 6,
     capitalGainsTax: 15,
     depreciationYears: 27.5,
+    rentGrowthRate: 3,
   },
+  extraMonthlyPayment: 0,
+  manualFinancials: DEFAULT_MANUAL_FINANCIALS,
 };
 
 export const CHART_COLORS = {

@@ -31,6 +31,14 @@ export interface Assumptions {
   sellingCosts: number;
   capitalGainsTax: number;
   depreciationYears: number;
+  rentGrowthRate: number;
+}
+
+export interface ManualFinancials {
+  monthlyRent: number;
+  otherMonthlyIncome: number;
+  vacancyRate: number;
+  annualExpenses: Record<Exclude<ExpenseCategory, 'mortgage'>, number>;
 }
 
 export interface AppConfig {
@@ -38,6 +46,8 @@ export interface AppConfig {
   mortgage: MortgageConfig;
   mortgages: MortgagePeriod[];
   assumptions: Assumptions;
+  extraMonthlyPayment: number;
+  manualFinancials: ManualFinancials;
 }
 
 export type ExpenseCategory =

@@ -80,6 +80,15 @@ export function AssumptionsForm() {
           max={30}
           step={1}
         />
+        <NumberInput
+          label="Rent Growth Rate"
+          value={assumptions.rentGrowthRate}
+          onChange={(v) => update({ rentGrowthRate: v })}
+          suffix="%"
+          min={-5}
+          max={15}
+          step={0.5}
+        />
       </div>
     </div>
   );

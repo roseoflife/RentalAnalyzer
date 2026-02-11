@@ -12,16 +12,25 @@ export function calculateAnnualSummaries(
   expenses.forEach((r) => years.add(r.year));
 
   const sortedYears = Array.from(years).sort((a, b) => a - b);
+  const baseYear = sortedYears[0];
 
   return sortedYears.map((year, yearIndex) => {
     const yearIncome = income.filter((r) => r.year === year);
     const yearExpenses = expenses.filter((r) => r.year === year);
 
-    const grossIncome = yearIncome.reduce(
+    const rawGrossIncome = yearIncome.reduce(
       (sum, r) => sum + r.rentalIncome + r.otherIncome,
       0
     );
-    const vacancyLoss = yearIncome.reduce((sum, r) => sum + r.vacancyLoss, 0);
+    const rawVacancyLoss = yearIncome.reduce((sum, r) => sum + r.vacancyLoss, 0);
+
+    // Apply rent growth rate compounding from base year
+    const rentGrowthMultiplier = Math.pow(
+      1 + config.assumptions.rentGrowthRate / 100,
+      year - baseYear
+    );
+    const grossIncome = rawGrossIncome * rentGrowthMultiplier;
+    const vacancyLoss = rawVacancyLoss * rentGrowthMultiplier;
     const effectiveGrossIncome = grossIncome - vacancyLoss;
 
     // Expense breakdown
@@ -61,12 +70,13 @@ export function calculateAnnualSummaries(
       totalCashInvested > 0 ? (netCashFlow / totalCashInvested) * 100 : 0;
 
     // Mortgage principal and interest (use multi-mortgage if available)
+    const extra = config.extraMonthlyPayment ?? 0;
     const hasMultiMortgage = config.mortgages && config.mortgages.length > 0;
     const loanBalance = hasMultiMortgage
-      ? getMultiMortgageBalanceAtMonth(config.mortgages, year, 12)
+      ? getMultiMortgageBalanceAtMonth(config.mortgages, year, 12, extra)
       : getLoanBalanceAtMonth(config.mortgage, (year - config.mortgage.startYear + 1) * 12);
     const { principal: principalPaid, interest: interestPaid } = hasMultiMortgage
-      ? getMultiMortgagePrincipalAndInterest(config.mortgages, year)
+      ? getMultiMortgagePrincipalAndInterest(config.mortgages, year, extra)
       : getPrincipalAndInterestForYear(config.mortgage, year);
 
     const equity = propertyValue - loanBalance;
@@ -180,10 +190,12 @@ export function calculateOverallMetrics(
       ? (Math.pow(1 + totalROI / 100, 1 / years) - 1) * 100
       : 0;
 
-  // S&P 500 comparison
-  const spComparison =
-    totalCashInvested *
-    Math.pow(1 + config.assumptions.spReturn / 100, years);
+  // S&P 500 comparison: compound initial cash + reinvest each year's cash flow
+  const spRate = config.assumptions.spReturn / 100;
+  let spComparison = totalCashInvested;
+  for (const s of summaries) {
+    spComparison = spComparison * (1 + spRate) + s.netCashFlow + s.taxBenefit;
+  }
 
   // Property total wealth = equity + cumulative cash flow + tax benefits
   const propertyTotalWealth =

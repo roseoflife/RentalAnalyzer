@@ -1,4 +1,4 @@
-import type { AppConfig, IncomeRecord, ExpenseRecord, PropertyConfig, MortgageConfig, MortgagePeriod, Assumptions } from '../types';
+import type { AppConfig, IncomeRecord, ExpenseRecord, ExpenseCategory, PropertyConfig, MortgageConfig, MortgagePeriod, Assumptions, ManualFinancials } from '../types';
 import type { TabId } from '../constants/defaults';
 import { DEFAULT_CONFIG } from '../constants/defaults';
 import { calculateMonthlyPayment, calculateLoanAmount } from '../utils/mortgage';
@@ -38,6 +38,8 @@ export type AppAction =
   | { type: 'SET_INCOME_DATA'; payload: IncomeRecord[]; file?: LoadedFile }
   | { type: 'SET_EXPENSE_DATA'; payload: ExpenseRecord[]; file?: LoadedFile }
   | { type: 'SET_ALL_DATA'; payload: { income: IncomeRecord[]; expenses: ExpenseRecord[] }; file?: LoadedFile }
+  | { type: 'SET_EXTRA_MONTHLY_PAYMENT'; payload: number }
+  | { type: 'SET_MANUAL_FINANCIALS'; payload: Partial<ManualFinancials> }
   | { type: 'SET_ACTIVE_TAB'; payload: TabId }
   | { type: 'CLEAR_DATA' };
 
@@ -49,6 +51,55 @@ export const initialState: AppState = {
   dataLoaded: false,
   loadedFiles: [],
 };
+
+function generateManualRecords(
+  manual: ManualFinancials,
+  config: AppConfig
+): { income: IncomeRecord[]; expenses: ExpenseRecord[] } {
+  const year = new Date().getFullYear();
+  const income: IncomeRecord[] = [];
+  const expenses: ExpenseRecord[] = [];
+
+  const monthlyGross = manual.monthlyRent + manual.otherMonthlyIncome;
+  const monthlyVacancy = monthlyGross * (manual.vacancyRate / 100);
+
+  for (let month = 1; month <= 12; month++) {
+    income.push({
+      year,
+      month,
+      rentalIncome: manual.monthlyRent,
+      otherIncome: manual.otherMonthlyIncome,
+      vacancyLoss: monthlyVacancy,
+    });
+
+    // Mortgage expense from config
+    if (config.mortgages.length > 0) {
+      const lastMortgage = config.mortgages[config.mortgages.length - 1];
+      expenses.push({
+        year,
+        month,
+        category: 'mortgage',
+        amount: lastMortgage.monthlyPayment + (config.extraMonthlyPayment ?? 0),
+        description: 'Mortgage payment',
+      });
+    }
+
+    // Spread annual expenses evenly across months
+    for (const [cat, annual] of Object.entries(manual.annualExpenses)) {
+      if (annual > 0) {
+        expenses.push({
+          year,
+          month,
+          category: cat as ExpenseCategory,
+          amount: annual / 12,
+          description: '',
+        });
+      }
+    }
+  }
+
+  return { income, expenses };
+}
 
 function recalculateMortgage(
   property: PropertyConfig,
@@ -170,6 +221,11 @@ export function appReducer(state: AppState, action: AppAction): AppState {
           assumptions: { ...state.config.assumptions, ...action.payload },
         },
       };
+    case 'SET_EXTRA_MONTHLY_PAYMENT':
+      return {
+        ...state,
+        config: { ...state.config, extraMonthlyPayment: action.payload },
+      };
     case 'SET_INCOME_DATA': {
       const mergedIncome = mergeRecordsByYear(state.incomeData, action.payload);
       const loaded = mergedIncome.length > 0 || state.expenseData.length > 0;
@@ -202,6 +258,31 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         dataLoaded: mergedIncome.length > 0 || mergedExpenses.length > 0,
         activeTab: 'past',
         loadedFiles: action.file ? [...state.loadedFiles, action.file] : state.loadedFiles,
+      };
+    }
+    case 'SET_MANUAL_FINANCIALS': {
+      const manualFinancials = {
+        ...state.config.manualFinancials,
+        ...action.payload,
+        annualExpenses: {
+          ...state.config.manualFinancials.annualExpenses,
+          ...(action.payload.annualExpenses ?? {}),
+        },
+      };
+      const newConfig = { ...state.config, manualFinancials };
+      const records = generateManualRecords(manualFinancials, newConfig);
+      const hasData = records.income.length > 0 && (manualFinancials.monthlyRent > 0 || manualFinancials.otherMonthlyIncome > 0);
+      // Merge manual records (replaces current year)
+      const currentYear = new Date().getFullYear();
+      const keptIncome = state.incomeData.filter((r) => r.year !== currentYear);
+      const keptExpenses = state.expenseData.filter((r) => r.year !== currentYear);
+      return {
+        ...state,
+        config: newConfig,
+        incomeData: [...keptIncome, ...records.income].sort((a, b) => a.year - b.year || a.month - b.month),
+        expenseData: [...keptExpenses, ...records.expenses].sort((a, b) => a.year - b.year || a.month - b.month),
+        dataLoaded: hasData || keptIncome.length > 0 || keptExpenses.length > 0,
+        activeTab: hasData ? 'past' : state.activeTab,
       };
     }
     case 'SET_ACTIVE_TAB':

@@ -15,7 +15,9 @@
       "Bash(npx vite build:*)",
       "Bash(npx vite:*)",
       "Bash(node -e:*)",
-      "Bash(diff:*)"
+      "Bash(diff:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)"
     ]
   }
 }
